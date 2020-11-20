@@ -145,6 +145,13 @@ Example of applying Unique clustered index on two columns, Ordinary index on one
 
 ## Changelog
 
+### v0.18.1
+#### New Features:
+- Adds CI/CD
+
+#### Fixes:
+- Fix errors in profiles instruction
+
 ### v0.18.0.1
 #### New Features:
 - Adds support for Azure Active Directory as authentication provider
