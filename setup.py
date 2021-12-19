@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-from setuptools import find_packages
-from distutils.core import setup
+from setuptools import find_namespace_packages, setup
 import os
 import re
 
@@ -28,7 +27,7 @@ def _dbt_sqlserver_version():
 package_version = _dbt_sqlserver_version()
 description = """A sqlserver adapter plugin for dbt (data build tool)"""
 
-dbt_version = '0.19'
+dbt_version = '1.0'
 # the package version should be the dbt version, with maybe some things on the
 # ends of it. (0.18.1 vs 0.18.1a1, 0.18.1.1, ...)
 if not package_version.startswith(dbt_version):
@@ -47,18 +46,11 @@ setup(
     author="Mikael Ene",
     author_email="mikael.ene@eneanalytics.com",
     url="https://github.com/mikaelene/dbt-sqlserver",
-    packages=find_packages(),
-    package_data={
-        "dbt": [
-            "include/sqlserver/dbt_project.yml",
-            "include/sqlserver/macros/*.sql",
-            "include/sqlserver/macros/**/*.sql",
-            "include/sqlserver/macros/**/**/*.sql",
-        ]
-    },
+    packages=find_namespace_packages(include=['dbt', 'dbt.*']),
+    include_package_data=True,
     install_requires=[
-        "dbt-core~=0.19.0",
-        "pyodbc>=4.0.27",
-        "azure-identity>=1.4.0",
+        "dbt-core~=1.0.0",
+        "pyodbc~=4.0.32",
+        "azure-identity>=1.7.0",
     ]
 )

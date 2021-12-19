@@ -1,4 +1,26 @@
+{% macro sqlserver__create_clustered_columnstore_index(relation) -%}
+  {%- set cci_name = relation.schema ~ '_' ~ relation.identifier ~ '_cci' -%}
+  {%- set relation_name = relation.schema ~ '_' ~ relation.identifier -%}
+  {%- set full_relation = relation.schema ~ '.' ~ relation.identifier -%}
+  use [{{ relation.database }}];
+  if EXISTS (
+        SELECT * FROM
+        sys.indexes WHERE name = '{{cci_name}}'
+        AND object_id=object_id('{{relation_name}}')
+    )
+  DROP index {{full_relation}}.{{cci_name}}
+  CREATE CLUSTERED COLUMNSTORE INDEX {{cci_name}}
+    ON {{full_relation}}
+{% endmacro %}
+
+
+{# TODO
+  move to dbt-postgres's index implementation strategy
+  https://github.com/dbt-msft/dbt-sqlserver/issues/163
+ #}
+
 {# most of this code is from https://github.com/jacobm001/dbt-mssql/blob/master/dbt/include/mssql/macros/indexes.sql        #}
+
 
 {% macro drop_xml_indexes() -%}
 {# Altered from https://stackoverflow.com/q/1344401/10415173 #}
@@ -108,14 +130,23 @@ select @drop_remaining_indexes_last = (
 
 {{ log("Creating clustered index...") }}
 
+{% set idx_name = this.table + '__clustered_index_on_' + columns|join('_') %}
+
+if not exists(select * from sys.indexes 
+                where 
+                name = '{{ idx_name }}' and 
+                object_id = OBJECT_ID('{{ this }}')
+)
+begin
+
 create
 {% if unique -%}
 unique
 {% endif %}
 clustered index
-    {{ this.table }}__clustered_index_on_{{ columns|join("_") }}
+    {{ idx_name }}
       on {{ this }} ({{ '[' + columns|join("], [") + ']' }})
-
+end
 {%- endmacro %}
 
 
@@ -123,11 +154,19 @@ clustered index
 
 {{ log("Creating nonclustered index...") }}
 
+{% set idx_name = this.table + '__index_on_' + columns|join('_')|replace(" ", "_") %}
+
+if not exists(select * from sys.indexes 
+                where 
+                name = '{{ idx_name }}' and 
+                object_id = OBJECT_ID('{{ this }}')
+)
+begin
 create nonclustered index
-    {{ this.table }}__index_on_{{ columns|join("_") }}
+    {{ idx_name }}
       on {{ this }} ({{ '[' + columns|join("], [") + ']' }})
       {% if includes -%}
         include ({{ '[' + includes|join("], [") + ']' }})
       {% endif %}
-
+end
 {% endmacro %}
